@@ -14,11 +14,14 @@ export async function execCommand(cmd: string): Promise<void> {
     await $`${shell} ${shellFlag} ${trimmed}`;
   } catch (error) {
     if (error instanceof $.ShellError) {
-      throw new Error(`Command failed with exit code ${error.exitCode}`);
+      const exitCode = error.exitCode ?? "unknown";
+      throw new Error(
+        `Command failed with exit code ${exitCode}: ${trimmed}`
+      );
     }
     if (error instanceof Error) {
-      throw error;
+      throw new Error(`Failed to execute command "${trimmed}": ${error.message}`);
     }
-    throw new Error("Failed to execute command");
+    throw new Error(`Failed to execute command: ${trimmed}`);
   }
 }

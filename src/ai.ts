@@ -1,6 +1,17 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic({});
+function getClient(): Anthropic {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "ANTHROPIC_API_KEY environment variable is not set. " +
+        "Please set it with: export ANTHROPIC_API_KEY='your-api-key'"
+    );
+  }
+  return new Anthropic({ apiKey });
+}
+
+const client = getClient();
 
 export async function generateCommand(userIntent: string): Promise<string> {
   const systemPrompt = `You are Ariadne, a precise assistant that converts natural language user intents into exactly one safe, executable Unix terminal command (macOS/Linux). Your mission is to choose the most common, standard, and safe command that fulfills the intent and output it as a single ASCII line the shell can run directly.
