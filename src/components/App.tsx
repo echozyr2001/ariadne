@@ -68,10 +68,9 @@ const App: React.FC<AppProps> = ({ args }) => {
     try {
       await execCommand(command);
       setState("success");
-      // Exit after successful execution
-      setTimeout(() => {
-        exit();
-      }, 100);
+      // Exit immediately after successful execution
+      // The command output is already in the terminal
+      exit();
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Execution failed"));
       setState("error");
@@ -112,7 +111,12 @@ const App: React.FC<AppProps> = ({ args }) => {
         </>
       )}
 
-      {state === "executing" && <ExecutionStatus command={command} />}
+      {state === "executing" && (
+        <Box marginY={1}>
+          <Text color="green">⚡ Executing: </Text>
+          <Text color="cyan">{command}</Text>
+        </Box>
+      )}
 
       {state === "error" && error && <ErrorDisplay error={error} />}
 

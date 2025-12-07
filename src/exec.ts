@@ -15,12 +15,12 @@ export async function execCommand(cmd: string): Promise<void> {
   } catch (error) {
     if (error instanceof $.ShellError) {
       const exitCode = error.exitCode ?? "unknown";
-      throw new Error(
-        `Command failed with exit code ${exitCode}: ${trimmed}`
-      );
+      throw new Error(`Command failed with exit code ${exitCode}: ${trimmed}`);
     }
     if (error instanceof Error) {
-      throw new Error(`Failed to execute command "${trimmed}": ${error.message}`);
+      throw new Error(
+        `Failed to execute command "${trimmed}": ${error.message}`
+      );
     }
     throw new Error(`Failed to execute command: ${trimmed}`);
   }
