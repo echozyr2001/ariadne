@@ -21,12 +21,17 @@
   ],
   "author": "echozyr2001 <echo.zyr.2001@gmail.com>",
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/react": "^19.2.7",
+    "fast-check": "^4.4.0",
+    "ink-testing-library": "^4.0.0"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.71.1"
+    "@anthropic-ai/sdk": "^0.71.1",
+    "ink": "^6.5.1",
+    "react": "^19.2.1"
   }
 }
