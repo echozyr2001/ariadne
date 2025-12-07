@@ -15,29 +15,27 @@ import {
 import type { AppProps, AppState } from "@/components";
 
 const App: React.FC<AppProps> = ({ args }) => {
-  const [state, setState] = useState<AppState>("help");
-  const [intent, setIntent] = useState<string>("");
+  // Determine initial state based on args
+  const shouldShowHelp =
+    args.length === 0 || args.includes("--help") || args.includes("-h");
+  const initialIntent = shouldShowHelp ? "" : args.join(" ");
+
+  const [state, setState] = useState<AppState>(
+    shouldShowHelp ? "help" : "generating"
+  );
+  const [intent, setIntent] = useState<string>(initialIntent);
   const [command, setCommand] = useState<string>("");
   const [error, setError] = useState<Error | null>(null);
   const { exit } = useApp();
 
-  // Parse arguments and determine initial state
+  // Handle help state exit
   useEffect(() => {
-    // Check for help flags or empty args
-    if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
-      setState("help");
-      // Exit after showing help
+    if (state === "help") {
       setTimeout(() => {
         exit();
       }, 100);
-      return;
     }
-
-    // Extract user intent from args
-    const userIntent = args.join(" ");
-    setIntent(userIntent);
-    setState("generating");
-  }, [args, exit]);
+  }, [state, exit]);
 
   // Handle command generation
   useEffect(() => {
@@ -111,12 +109,7 @@ const App: React.FC<AppProps> = ({ args }) => {
         </>
       )}
 
-      {state === "executing" && (
-        <Box marginY={1}>
-          <Text color="green">⚡ Executing: </Text>
-          <Text color="cyan">{command}</Text>
-        </Box>
-      )}
+      {state === "executing" && <ExecutionStatus command={command} />}
 
       {state === "error" && error && <ErrorDisplay error={error} />}
 
