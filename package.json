@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.1",
+    "@inkjs/ui": "^2.0.0",
     "ink": "^6.5.1",
     "react": "^19.2.1"
   }
