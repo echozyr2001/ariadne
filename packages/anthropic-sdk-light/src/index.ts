@@ -1,7 +1,6 @@
 // Main exports for the lightweight Anthropic SDK
-// This file will be populated in subsequent tasks
 
-export { AnthropicClient } from "./client.ts";
+export { AnthropicClient } from "./client";
 export type {
   ClientConfig,
   MessageCreateParams,
@@ -9,10 +8,15 @@ export type {
   ContentBlock,
   Message,
   StreamEvent,
-} from "./types.ts";
+} from "./types";
 export {
   AnthropicError,
   AuthenticationError,
   RateLimitError,
   APIError,
-} from "./errors.ts";
+  ValidationError,
+  NetworkError,
+  StreamInterruptedError,
+} from "./errors";
+export { SSEParser } from "./streaming";
+export type { SSEEvent } from "./streaming";
