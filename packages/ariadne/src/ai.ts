@@ -1,6 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { AnthropicClient } from "@ariadne/anthropic-sdk-light";
 
-function getClient(): Anthropic {
+function getClient(): AnthropicClient {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error(
@@ -8,7 +8,7 @@ function getClient(): Anthropic {
         "Please set it with: export ANTHROPIC_API_KEY='your-api-key'"
     );
   }
-  return new Anthropic({ apiKey });
+  return new AnthropicClient({ apiKey });
 }
 
 const client = getClient();

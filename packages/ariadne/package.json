@@ -29,7 +29,6 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.71.1",
     "@ariadne/anthropic-sdk-light": "workspace:*",
     "@inkjs/ui": "^2.0.0",
     "ink": "^6.5.1",
