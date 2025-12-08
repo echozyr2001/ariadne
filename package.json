@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "start": "bun run packages/ariadne/index.ts",
+    "build": "bun build ./packages/ariadne/index.ts --compile --minify --sourcemap=external --outfile dist/ari",
     "test": "bun test",
     "test:watch": "bun test --watch"
   },

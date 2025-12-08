@@ -16,9 +16,95 @@ import {
 } from "./errors";
 import { SSEParser } from "./streaming";
 
-export class AnthropicClient {
-  private apiKey: string;
-  private baseURL: string;
+/**
+ * Messages API resource
+ */
+class Messages {
+  constructor(private client: Anthropic) {}
+
+  /**
+   * Create a message with streaming enabled
+   */
+  create(
+    params: MessageCreateParams & { stream: true }
+  ): Promise<AsyncIterable<StreamEvent>>;
+
+  /**
+   * Create a message without streaming
+   */
+  create(params: MessageCreateParams & { stream?: false }): Promise<Message>;
+
+  /**
+   * Create a message with the Anthropic API
+   * @param params - Message creation parameters
+   * @returns Promise resolving to either a Message (non-streaming) or AsyncIterable<StreamEvent> (streaming)
+   */
+  async create(
+    params: MessageCreateParams
+  ): Promise<Message | AsyncIterable<StreamEvent>> {
+    // Validate required parameters
+    if (!params.model || !params.max_tokens || !params.messages) {
+      throw new ValidationError(
+        "Missing required parameters: model, max_tokens, and messages are required"
+      );
+    }
+
+    if (!Array.isArray(params.messages) || params.messages.length === 0) {
+      throw new ValidationError("messages array cannot be empty");
+    }
+
+    // Build request URL
+    const url = `${this.client.baseURL}/v1/messages`;
+
+    // Build request headers
+    const headers = {
+      "X-Api-Key": this.client.apiKey,
+      "Content-Type": "application/json",
+      "anthropic-version": "2023-06-01",
+    };
+
+    // Build request body
+    const body = JSON.stringify(params);
+
+    try {
+      // Make the API request
+      const response = await fetch(url, {
+        method: "POST",
+        headers,
+        body,
+      });
+
+      // Handle error responses
+      if (!response.ok) {
+        await this.client.handleErrorResponse(response);
+      }
+
+      // Handle streaming vs non-streaming responses
+      if (params.stream) {
+        return this.client.streamMessages(response);
+      } else {
+        return (await response.json()) as Message;
+      }
+    } catch (error) {
+      // Re-throw our custom errors
+      if (error instanceof AnthropicError) {
+        throw error;
+      }
+      // Wrap network errors
+      throw new NetworkError(
+        `Network error: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+}
+
+export class Anthropic {
+  public readonly apiKey: string;
+  public readonly baseURL: string;
+  public readonly messages: Messages;
 
   constructor(config: ClientConfig) {
     // Validate API key is provided
@@ -34,84 +120,16 @@ export class AnthropicClient {
       config.baseURL ||
       process.env.ANTHROPIC_BASE_URL ||
       "https://api.anthropic.com";
+
+    // Initialize Messages API resource
+    this.messages = new Messages(this);
   }
-
-  /**
-   * Messages API namespace
-   */
-  public messages = {
-    /**
-     * Create a message with the Anthropic API
-     * @param params - Message creation parameters
-     * @returns Promise resolving to either a Message (non-streaming) or AsyncIterable<StreamEvent> (streaming)
-     */
-    create: async (
-      params: MessageCreateParams
-    ): Promise<Message | AsyncIterable<StreamEvent>> => {
-      // Validate required parameters
-      if (!params.model || !params.max_tokens || !params.messages) {
-        throw new ValidationError(
-          "Missing required parameters: model, max_tokens, and messages are required"
-        );
-      }
-
-      if (!Array.isArray(params.messages) || params.messages.length === 0) {
-        throw new ValidationError("messages array cannot be empty");
-      }
-
-      // Build request URL
-      const url = `${this.baseURL}/v1/messages`;
-
-      // Build request headers
-      const headers = {
-        "X-Api-Key": this.apiKey,
-        "Content-Type": "application/json",
-        "anthropic-version": "2023-06-01",
-      };
-
-      // Build request body
-      const body = JSON.stringify(params);
-
-      try {
-        // Make the API request
-        const response = await fetch(url, {
-          method: "POST",
-          headers,
-          body,
-        });
-
-        // Handle error responses
-        if (!response.ok) {
-          await this.handleErrorResponse(response);
-        }
-
-        // Handle streaming vs non-streaming responses
-        if (params.stream) {
-          return this.streamMessages(response);
-        } else {
-          return (await response.json()) as Message;
-        }
-      } catch (error) {
-        // Re-throw our custom errors
-        if (error instanceof AnthropicError) {
-          throw error;
-        }
-        // Wrap network errors
-        throw new NetworkError(
-          `Network error: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-          error instanceof Error ? error : undefined
-        );
-      }
-    },
-  };
 
   /**
    * Handle error responses from the API
    * @param response - The error response from fetch
    */
-  private async handleErrorResponse(response: Response): Promise<never> {
+  public async handleErrorResponse(response: Response): Promise<never> {
     const statusCode = response.status;
     let errorMessage = `API error (${statusCode})`;
     let errorType: string | undefined;
@@ -149,9 +167,7 @@ export class AnthropicClient {
    * @param response - The streaming response from fetch
    * @returns AsyncIterable of StreamEvent objects
    */
-  private async *streamMessages(
-    response: Response
-  ): AsyncIterable<StreamEvent> {
+  public async *streamMessages(response: Response): AsyncIterable<StreamEvent> {
     if (!response.body) {
       throw new AnthropicError("Response body is null");
     }

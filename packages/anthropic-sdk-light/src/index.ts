@@ -1,6 +1,6 @@
 // Main exports for the lightweight Anthropic SDK
 
-export { AnthropicClient } from "./client";
+export { Anthropic } from "./client";
 export type {
   ClientConfig,
   MessageCreateParams,
