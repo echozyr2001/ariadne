@@ -29,7 +29,11 @@ export class AnthropicClient {
     }
 
     this.apiKey = config.apiKey;
-    this.baseURL = config.baseURL || "https://api.anthropic.com";
+    // Priority: config.baseURL > ANTHROPIC_BASE_URL env var > default
+    this.baseURL =
+      config.baseURL ||
+      process.env.ANTHROPIC_BASE_URL ||
+      "https://api.anthropic.com";
   }
 
   /**
