@@ -1,5 +1,5 @@
-// import { Anthropic } from "@anthropic-ai/sdk";
-import { Anthropic } from "@ariadne/anthropic-sdk-light";
+import { Anthropic } from "@anthropic-ai/sdk";
+// import { Anthropic } from "@ariadne/anthropic-sdk-light";
 
 function getClient(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY;
