@@ -1,0 +1,38 @@
+{
+  "name": "ariadne",
+  "version": "0.1.0",
+  "description": "A CLI tool that converts natural language intents into executable Unix terminal commands using AI",
+  "module": "index.ts",
+  "type": "module",
+  "bin": {
+    "ari": "./index.ts"
+  },
+  "scripts": {
+    "start": "bun run index.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch"
+  },
+  "keywords": [
+    "cli",
+    "terminal",
+    "ai",
+    "command",
+    "natural-language"
+  ],
+  "author": "echozyr2001 <echo.zyr.2001@gmail.com>",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.2.7",
+    "react-devtools-core": "^7.0.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.1",
+    "@ariadne/anthropic-sdk-light": "workspace:*",
+    "@inkjs/ui": "^2.0.0",
+    "ink": "^6.5.1",
+    "react": "^19.2.1"
+  }
+}

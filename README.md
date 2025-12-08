@@ -2,6 +2,13 @@
 
 A CLI tool that converts natural language intents into executable Unix terminal commands using AI.
 
+## Project Structure
+
+This is a Bun workspace monorepo containing:
+
+- `packages/ariadne` - The main CLI application
+- `packages/anthropic-sdk-light` - A lightweight Anthropic SDK implementation with zero runtime dependencies
+
 ## Installation
 
 ```bash
@@ -28,26 +35,32 @@ You can get your API key from [Anthropic's console](https://console.anthropic.co
 ## Usage
 
 ```bash
-bun run index.ts "your intent in natural language"
+bun run start "your intent in natural language"
+```
+
+Or directly from the ariadne package:
+
+```bash
+bun run packages/ariadne/index.ts "your intent in natural language"
 ```
 
 ### Examples
 
 ```bash
 # List files with details
-bun run index.ts "list all files with details"
+bun run start "list all files with details"
 
 # Check which process is using a port
-bun run index.ts "check which process is using port 8080"
+bun run start "check which process is using port 8080"
 
 # Find files
-bun run index.ts "find all python files in current directory"
+bun run start "find all python files in current directory"
 
 # Show disk usage
-bun run index.ts "show disk usage"
+bun run start "show disk usage"
 
 # Search for text in files
-bun run index.ts "search for text 'error' in files"
+bun run start "search for text 'error' in files"
 ```
 
 After Ariadne suggests a command, you'll be prompted to execute it. Press `y` to execute, `n` or `Esc` to cancel.

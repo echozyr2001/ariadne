@@ -1,0 +1,25 @@
+{
+  "name": "@ariadne/anthropic-sdk-light",
+  "version": "0.1.0",
+  "description": "Lightweight Anthropic SDK implementation with zero runtime dependencies",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "keywords": [
+    "anthropic",
+    "claude",
+    "ai",
+    "sdk",
+    "lightweight"
+  ],
+  "author": "echozyr2001 <echo.zyr.2001@gmail.com>",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
