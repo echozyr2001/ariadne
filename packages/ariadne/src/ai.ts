@@ -1,4 +1,5 @@
 import { getAnthropicClient } from "@/anthropicClient";
+import { getLowTierModel } from "@/modelConfig";
 
 export async function generateCommand(userIntent: string): Promise<string> {
   const systemPrompt = `You are Ariadne, a precise assistant that converts natural language user intents into exactly one safe, executable Unix terminal command (macOS/Linux). Your mission is to choose the most common, standard, and safe command that fulfills the intent and output it as a single ASCII line the shell can run directly.
@@ -60,7 +61,7 @@ General strategy:
 
     const stream = await getAnthropicClient().messages.create({
       system: systemPrompt,
-      model: "anthropic/claude-3.5-haiku",
+      model: getLowTierModel(),
       max_tokens: 256,
       stream: true,
       messages: [
