@@ -1,3 +1,5 @@
+import type { CommitMessageResult } from "@/commit";
+
 export type AppState =
   | "help"
   | "generating"
@@ -5,7 +7,8 @@ export type AppState =
   | "executing"
   | "success"
   | "error"
-  | "cancelled";
+  | "cancelled"
+  | "commit_ready";
 
 export interface ApplicationContext {
   state: AppState;
@@ -47,4 +50,8 @@ export interface ExecutionStatusProps {
 export interface ErrorDisplayProps {
   error: Error;
   type?: "generation" | "execution" | "general";
+}
+
+export interface CommitMessageDisplayProps {
+  result: CommitMessageResult;
 }

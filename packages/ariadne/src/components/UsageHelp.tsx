@@ -33,6 +33,25 @@ const UsageHelp: React.FC = () => {
           <Text color="cyan">ari</Text>
           <Text> "find all python files"</Text>
         </Text>
+        <Text>
+          <Text color="cyan">ari</Text>
+          <Text> "write a commit message for the current changes"</Text>
+        </Text>
+      </Box>
+
+      <Box marginY={1}>
+        <Text bold>Skills:</Text>
+      </Box>
+      <Box flexDirection="column" marginLeft={2} marginBottom={1}>
+        <Text color="green">shell_command</Text>
+        <Text color="gray">
+          Converts natural language into a single safe Unix command.
+        </Text>
+        <Text> </Text>
+        <Text color="green">commit_message</Text>
+        <Text color="gray">
+          Reads your latest git diff and suggests a conventional commit message.
+        </Text>
       </Box>
 
       <Box marginY={1}>

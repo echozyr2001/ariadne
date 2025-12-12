@@ -9,3 +9,4 @@ export { default as ConfirmPrompt } from "./ConfirmPrompt.js";
 export { default as ExecutionStatus } from "./ExecutionStatus.js";
 export { default as ErrorDisplay } from "./ErrorDisplay.js";
 export { default as UsageHelp } from "./UsageHelp.js";
+export { default as CommitMessageDisplay } from "./CommitMessageDisplay.js";
