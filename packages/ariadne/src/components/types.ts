@@ -1,22 +1,30 @@
 import type { CommitMessageResult } from "@/commit";
+import type { SkillDecision, SkillName } from "@/skills";
 
-export type AppState =
+// New unified state type
+export type AppScreen =
   | "help"
+  | "routing"
   | "generating"
   | "confirming"
   | "executing"
-  | "success"
+  | "commit_ready"
   | "error"
   | "cancelled"
-  | "commit_ready";
+  | "success";
 
-export interface ApplicationContext {
-  state: AppState;
+export interface AriadneState {
+  screen: AppScreen;
   intent: string;
-  command: string | null;
+  command: string;
   error: Error | null;
-  exitCode: number;
+  activeSkill: SkillName | "routing" | null;
+  skillDecision: SkillDecision | null;
+  commitResult: CommitMessageResult | null;
 }
+
+// Legacy AppState type for backward compatibility
+export type AppState = AppScreen;
 
 export interface AppProps {
   args: string[];

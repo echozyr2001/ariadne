@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { Box, Text, useApp } from "ink";
 import { generateCommand } from "@/ai";
 import { generateCommitMessage } from "@/commit";
@@ -14,167 +14,150 @@ import {
   UsageHelp,
   CommitMessageDisplay,
 } from "@/components";
-import type { AppProps, AppState } from "@/components";
-import type { CommitMessageResult } from "@/commit";
+import type { AppProps } from "@/components";
 import { determineSkill } from "@/skills";
-import type { SkillDecision, SkillName } from "@/skills";
+import { useAriadneState } from "@/hooks/useAriadneState";
 
 const App: React.FC<AppProps> = ({ args }) => {
-  // Determine initial state based on args
-  const shouldShowHelp =
-    args.length === 0 || args.includes("--help") || args.includes("-h");
-  const initialIntent = shouldShowHelp ? "" : args.join(" ");
-
-  const [state, setState] = useState<AppState>(
-    shouldShowHelp ? "help" : "generating"
-  );
-  const [intent, setIntent] = useState<string>(initialIntent);
-  const [command, setCommand] = useState<string>("");
-  const [error, setError] = useState<Error | null>(null);
-  const [activeSkill, setActiveSkill] =
-    useState<SkillName | "routing">("routing");
-  const [skillDecision, setSkillDecision] = useState<SkillDecision | null>(null);
-  const [commitResult, setCommitResult] =
-    useState<CommitMessageResult | null>(null);
   const { exit } = useApp();
+  const {
+    state,
+    startRouting,
+    skillDecided,
+    commandGenerated,
+    commitGenerated,
+    confirm,
+    executionFailed,
+    generationFailed,
+    cancel,
+    spinnerText,
+  } = useAriadneState(args);
 
-  // Handle help state exit
+  // Handle help screen exit
   useEffect(() => {
-    if (state === "help") {
-      setTimeout(() => {
-        exit();
-      }, 100);
+    if (state.screen === "help") {
+      const timer = setTimeout(() => exit(), 100);
+      return () => clearTimeout(timer);
     }
-  }, [state, exit]);
+  }, [state.screen, exit]);
 
-  // Handle command generation or commit message flow
+  // Handle commit ready screen exit
   useEffect(() => {
-    if (state !== "generating") return;
+    if (state.screen === "commit_ready") {
+      const timer = setTimeout(() => exit(), 250);
+      return () => clearTimeout(timer);
+    }
+  }, [state.screen, exit]);
 
-    setActiveSkill("routing");
-    setSkillDecision(null);
-    setCommitResult(null);
+  // Handle error screen exit
+  useEffect(() => {
+    if (state.screen === "error") {
+      const timer = setTimeout(() => exit(), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [state.screen, exit]);
+
+  // Handle cancelled screen exit
+  useEffect(() => {
+    if (state.screen === "cancelled") {
+      const timer = setTimeout(() => exit(), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [state.screen, exit]);
+
+  // Handle skill routing and generation flow
+  useEffect(() => {
+    if (state.screen !== "routing") return;
 
     const generate = async () => {
+      startRouting();
+
       try {
-        const decision = await determineSkill(intent, {
+        const decision = await determineSkill(state.intent, {
           useRouterModel: true,
         });
-        setSkillDecision(decision);
+        skillDecided(decision);
 
         if (decision.skill === "commit_message") {
-          setActiveSkill("commit_message");
-          const result = await generateCommitMessage(intent);
-          setCommitResult(result);
-          setState("commit_ready");
+          const result = await generateCommitMessage(state.intent);
+          commitGenerated(result);
           return;
         }
 
-        setActiveSkill("shell_command");
-        const generatedCommand = await generateCommand(intent);
-        setCommand(generatedCommand);
-        setState("confirming");
+        const generatedCommand = await generateCommand(state.intent);
+        commandGenerated(generatedCommand);
       } catch (err) {
-        setError(err instanceof Error ? err : new Error("Unknown error"));
-        setState("error");
-        // Exit after showing error
-        setTimeout(() => {
-          exit();
-        }, 100);
+        const error = err instanceof Error ? err : new Error("Unknown error");
+        generationFailed(error);
       }
     };
 
     generate();
-  }, [state, intent, exit]);
+  }, [state.screen, state.intent]);
 
-  // Exit shortly after showing a commit message
-  useEffect(() => {
-    if (state !== "commit_ready") {
-      return;
-    }
-    const timer = setTimeout(() => {
-      exit();
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [state, exit]);
+  // Note: Command execution is handled in handleConfirm when user confirms
 
-  // Handle confirmation
+  // User interaction handlers
   const handleConfirm = async () => {
-    if (activeSkill !== "shell_command") {
-      return;
-    }
-    setState("executing");
+    if (state.activeSkill !== "shell_command") return;
+
+    confirm();
 
     try {
-      await execCommand(command);
-      setState("success");
-      // Exit immediately after successful execution
-      // The command output is already in the terminal
-      exit();
+      await execCommand(state.command);
+      exit(); // Exit immediately after successful execution
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Execution failed"));
-      setState("error");
-      // Exit after showing error
-      setTimeout(() => {
-        exit();
-      }, 100);
+      const error = err instanceof Error ? err : new Error("Execution failed");
+      executionFailed(error);
     }
   };
 
-  // Handle cancellation
   const handleCancel = () => {
-    setState("cancelled");
-    // Exit gracefully on cancellation
-    setTimeout(() => {
-      exit();
-    }, 100);
+    cancel();
   };
 
-  const spinnerText =
-    activeSkill === "routing"
-      ? "Routing intent to the right skill..."
-      : activeSkill === "commit_message"
-        ? "Preparing commit message (reading git diff)..."
-        : "Generating shell command...";
-
-  // Render based on state
+  // Render based on screen
   return (
     <Box flexDirection="column">
-      {state === "help" && <UsageHelp />}
+      {state.screen === "help" && <UsageHelp />}
 
-      {state !== "help" && (
+      {state.screen !== "help" && (
         <>
           <Header />
-          <IntentDisplay intent={intent} />
-          {skillDecision && (
+          <IntentDisplay intent={state.intent} />
+          {state.skillDecision && (
             <Box marginBottom={1}>
               <Text color="gray">
-                Skill: {skillDecision.skill} ({skillDecision.via}) ·{" "}
-                {skillDecision.reason}
+                Skill: {state.skillDecision.skill} ({state.skillDecision.via}) ·{" "}
+                {state.skillDecision.reason}
               </Text>
             </Box>
           )}
         </>
       )}
 
-      {state === "generating" && <LoadingSpinner text={spinnerText} />}
+      {(state.screen === "routing" || state.screen === "generating") && (
+        <LoadingSpinner text={spinnerText()} />
+      )}
 
-      {state === "confirming" && (
+      {state.screen === "confirming" && (
         <>
-          <CommandDisplay command={command} />
+          <CommandDisplay command={state.command} />
           <ConfirmPrompt onConfirm={handleConfirm} onCancel={handleCancel} />
         </>
       )}
 
-      {state === "executing" && <ExecutionStatus command={command} />}
+      {state.screen === "executing" && <ExecutionStatus command={state.command} />}
 
-      {state === "error" && error && <ErrorDisplay error={error} />}
-
-      {state === "commit_ready" && commitResult && (
-        <CommitMessageDisplay result={commitResult} />
+      {state.screen === "error" && state.error && (
+        <ErrorDisplay error={state.error} />
       )}
 
-      {state === "cancelled" && (
+      {state.screen === "commit_ready" && state.commitResult && (
+        <CommitMessageDisplay result={state.commitResult} />
+      )}
+
+      {state.screen === "cancelled" && (
         <Box marginY={1}>
           <Text color="gray">Operation cancelled.</Text>
         </Box>
