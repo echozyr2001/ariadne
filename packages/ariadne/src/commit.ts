@@ -31,7 +31,9 @@ Requirements:
 - Never include diff hunks verbatim
 - Mention if the diff was truncated`;
 
-  const userMessage = `User request: ${userIntent || "Generate a commit message"}
+  const userMessage = `User request: ${
+    userIntent || "Generate a commit message"
+  }
 Diff source: ${
     repositoryDiff.diffSource === "staged" ? "staged changes" : "working tree"
   }

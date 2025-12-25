@@ -57,12 +57,13 @@ const UsageHelp: React.FC = () => {
       <Box marginY={1}>
         <Text bold>Options:</Text>
       </Box>
-      <Box flexDirection="column" marginLeft={2}>
+      <Box flexDirection="column" marginLeft={2} marginBottom={1}>
         <Text>
           <Text color="cyan">--help, -h</Text>
           <Text> Show this help message</Text>
         </Text>
       </Box>
+      <Text>{""}</Text>
     </Box>
   );
 };

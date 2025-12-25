@@ -137,7 +137,7 @@ const App: React.FC<AppProps> = ({ args }) => {
       )}
 
       {(state.screen === "routing" || state.screen === "generating") && (
-        <LoadingSpinner text={spinnerText()} />
+        <LoadingSpinner text={spinnerText} />
       )}
 
       {state.screen === "confirming" && (
@@ -147,7 +147,9 @@ const App: React.FC<AppProps> = ({ args }) => {
         </>
       )}
 
-      {state.screen === "executing" && <ExecutionStatus command={state.command} />}
+      {state.screen === "executing" && (
+        <ExecutionStatus command={state.command} />
+      )}
 
       {state.screen === "error" && state.error && (
         <ErrorDisplay error={state.error} />

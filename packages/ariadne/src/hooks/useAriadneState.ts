@@ -1,4 +1,4 @@
-import { useReducer, useCallback } from "react";
+import { useReducer, useCallback, useMemo } from "react";
 import type { SkillDecision, SkillName } from "@/skills";
 import type { CommitMessageResult } from "@/commit";
 
@@ -165,11 +165,7 @@ export function getSpinnerText(state: AriadneState): string {
 
 // Custom hook
 export function useAriadneState(args: string[]) {
-  const [state, dispatch] = useReducer(
-    reducer,
-    args,
-    createInitialState
-  );
+  const [state, dispatch] = useReducer(reducer, args, createInitialState);
 
   // Action creators
   const startRouting = useCallback(() => {
@@ -216,10 +212,10 @@ export function useAriadneState(args: string[]) {
     dispatch({ type: "RESET" });
   }, []);
 
-  // Derived state
-  const spinnerText = useCallback(() => {
+  // Derived state - use useMemo instead of useCallback to avoid function calls on every render
+  const spinnerText = useMemo(() => {
     return getSpinnerText(state);
-  }, [state]);
+  }, [state.activeSkill]);
 
   return {
     // State
