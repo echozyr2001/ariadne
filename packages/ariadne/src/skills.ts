@@ -119,37 +119,39 @@ function buildRouterPrompt(intent: string): string {
 
   return `You are a routing controller for Ariadne CLI. Analyze the user's intent and determine which skill to use.
 
-Available skills:
-${skillDescriptions}
-
-Analysis rules:
-1. Choose "commit_message" when the user wants to GENERATE/WRITE/CREATE a NEW commit message based on current git changes.
-   - Understand semantic meaning regardless of language
-   - Examples: "write a commit message", "generate commit message", "给我一个 commit message"
-   - Key semantic indicators: requests to "generate", "write", "create", "give me", "get" a commit message
-2. Choose "shell_command" when the user wants to MODIFY/EDIT/AMEND an existing commit message.
-   - Understand semantic meaning regardless of language
-   - Examples: "change the last commit message", "amend the last commit", "修改上一条 commit message"
-   - Key semantic indicators: requests to "modify", "change", "edit", "amend", "update" an existing commit message
-3. Choose "shell_command" for all other requests (default command generation behavior).
-
-CRITICAL: Perform semantic analysis of the user's intent. Understand the meaning even if the request is in Chinese, Japanese, or other languages.
-
-You MUST respond with ONLY a valid JSON object in this exact format:
-{
-  "skill": "commit_message" | "shell_command",
-  "confidence": 0.0-1.0,
-  "reason": "brief explanation of your decision"
-}
-
-Do NOT include:
-- Code fences (no \`\`\`json or \`\`\`)
-- Markdown formatting
-- Any text before or after the JSON
-- Comments or explanations outside the JSON
-
-User intent to analyze:
-"""${intent}"""`;
+    Available skills:
+    ${skillDescriptions}
+    
+    Analysis rules:
+    1. Choose "commit_message" when the user wants to GENERATE/WRITE/CREATE a NEW commit message based on current git changes.
+       - Understand semantic meaning regardless of language
+       - Examples: "write a commit message", "generate commit message", "create a commit message"
+       - Key semantic indicators: requests to "generate", "write", "create", "give me", "get" a commit message
+    2. Choose "shell_command" when the user wants to MODIFY/EDIT/AMEND an existing commit message.
+       - Understand semantic meaning regardless of language
+       - Examples: "change the last commit message", "amend the last commit", "edit the previous commit message"
+       - Key semantic indicators: requests to "modify", "change", "edit", "amend", "update" an existing commit message
+    3. Choose "shell_command" for all other requests (default command generation behavior).
+    
+    CRITICAL: Perform semantic analysis of the user's intent. Understand the meaning regardless of the language used in the request (English, Chinese, Japanese, or any other language).
+    
+    You MUST respond with ONLY a valid JSON object in this exact format:
+    {
+      "skill": "commit_message" | "shell_command",
+      "confidence": 0.0-1.0,
+      "reason": "brief explanation of your decision"
+    }
+    
+    Do NOT include:
+    - Code fences (no \`\`\`json or \`\`\`)
+    - Markdown formatting
+    - Any text before or after the JSON
+    - Comments or explanations outside the JSON
+    
+    Analyze the user's intent and respond with JSON.
+    
+    User intent to analyze:
+    """${intent}"""`;
 }
 
 /**
