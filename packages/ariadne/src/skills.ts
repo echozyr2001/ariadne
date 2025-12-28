@@ -1,86 +1,22 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { getLowTierModel } from "@/modelConfig";
-
-export type SkillName = "shell_command" | "commit_message" | "code_review";
-
-export interface SkillDecision {
-  skill: SkillName;
-  reason: string;
-  confidence: number;
-  via: "heuristic" | "router" | "fallback";
-}
-
-export interface SkillRoutingOptions {
-  useRouterModel?: boolean;
-}
+import {
+  allSkills,
+  isModifyCommitIntent,
+  getAllSkillNames,
+} from "./skills/index";
+import type {
+  SkillName,
+  SkillDecision,
+  SkillRoutingOptions,
+} from "./skills/types";
 
 const ROUTER_BUDGET = 0.002;
-
-// Keywords for detecting commit message generation intent
-const COMMIT_KEYWORDS = [/commit message/i, /commit msg/i, /git commit/i];
-
-// Keywords for detecting code review intent
-const CODE_REVIEW_KEYWORDS = [
-  /code review/i,
-  /review code/i,
-  /review my code/i,
-  /review changes/i,
-  /审查代码/i,
-  /代码审查/i,
-  /检查代码/i,
-];
-
-// English keywords that indicate modification intent
-// These should NOT trigger commit_message skill, but should generate shell commands instead
-const COMMIT_MODIFY_KEYWORDS = [
-  /amend.*commit/i,
-  /change.*commit message/i,
-  /edit.*commit message/i,
-  /rewrite.*commit/i,
-  /modify.*commit message/i,
-  /update.*commit message/i,
-  /fix.*commit message/i,
-  /correct.*commit message/i,
-];
-
-// Patterns for detecting modification intent in mixed-language inputs
-// Used as heuristics when router is unavailable
-// Note: Non-English patterns are included as string literals in regex only
-const MODIFY_INTENT_PATTERNS = [
-  /(?:last|previous|上一条|上一个|前一个|latest).*commit message/i,
-  /(?:modify|change|edit|amend|修改|改变|编辑).*commit message/i,
-  /commit message.*(?:last|previous|上一条|上一个|前一个|latest)/i,
-  /commit message.*(?:modify|change|edit|amend|修改|改变|编辑)/i,
-];
-
-const SKILL_MANIFEST: Record<SkillName, string> = {
-  shell_command:
-    "Generate exactly one safe Unix shell command that satisfies the request.",
-  commit_message:
-    "Inspect local git changes and craft a concise, conventional commit message that summarizes them.",
-  code_review:
-    "Review local git changes and provide constructive feedback, potential issues, and improvement suggestions.",
-};
 
 function logDebug(message: string) {
   if (process.env.ARIADNE_DEBUG) {
     console.debug(`[ariadne:skills] ${message}`);
   }
-}
-
-/**
- * Check if intent contains English modification keywords
- */
-function containsModifyIntent(intent: string): boolean {
-  return COMMIT_MODIFY_KEYWORDS.some((pattern) => pattern.test(intent));
-}
-
-/**
- * Check if intent might indicate modification using pattern matching
- * Used as fallback when router is unavailable
- */
-function mightBeModifyIntent(intent: string): boolean {
-  return MODIFY_INTENT_PATTERNS.some((pattern) => pattern.test(intent));
 }
 
 /**
@@ -91,6 +27,9 @@ function containsNonAscii(intent: string): boolean {
   return /[^\x00-\x7F]/.test(intent);
 }
 
+/**
+ * Detect skill by keyword matching using skill definitions
+ */
 export function detectSkillByKeyword(intent: string): SkillDecision | null {
   if (!intent.trim()) {
     return null;
@@ -98,48 +37,41 @@ export function detectSkillByKeyword(intent: string): SkillDecision | null {
 
   // If the intent contains modification keywords, don't use keyword matching
   // Let the router handle it for better semantic understanding
-  if (containsModifyIntent(intent)) {
+  if (isModifyCommitIntent(intent)) {
     return null;
   }
 
   // If the intent contains non-ASCII characters (e.g., Chinese), always use router
-  // for semantic understanding, even if it contains "commit message" keywords
+  // for semantic understanding, even if it contains keywords
   // This avoids false positives like "我希望修改上一条commit message"
   if (containsNonAscii(intent)) {
     return null;
   }
 
   // For pure English inputs without modification intent, use keyword matching
-  // Check code review keywords first (more specific)
-  const codeReviewPattern = CODE_REVIEW_KEYWORDS.find((pattern) =>
-    pattern.test(intent)
-  );
-  if (codeReviewPattern) {
-    return {
-      skill: "code_review",
-      reason: `Matched keyword "${codeReviewPattern}"`,
-      confidence: 0.92,
-      via: "heuristic",
-    };
-  }
-
-  const commitPattern = COMMIT_KEYWORDS.find((pattern) => pattern.test(intent));
-  if (commitPattern) {
-    return {
-      skill: "commit_message",
-      reason: `Matched keyword "${commitPattern}"`,
-      confidence: 0.92,
-      via: "heuristic",
-    };
+  // Check skills in order (more specific skills first)
+  for (const skill of allSkills) {
+    if (skill.detect) {
+      const decision = skill.detect(intent);
+      if (decision) {
+        return decision;
+      }
+    }
   }
 
   return null;
 }
 
+/**
+ * Build router prompt using skill definitions
+ */
 function buildRouterPrompt(intent: string): string {
-  const skillDescriptions = Object.entries(SKILL_MANIFEST)
-    .map(([name, description]) => `- ${name}: ${description}`)
+  const skillDescriptions = allSkills
+    .map((skill) => `- ${skill.name}: ${skill.description}`)
     .join("\n");
+  const skillNamesList = getAllSkillNames()
+    .map((name) => `"${name}"`)
+    .join(" | ");
 
   return `You are a routing controller for Ariadne CLI. Analyze the user's intent and determine which skill to use.
 
@@ -165,7 +97,7 @@ function buildRouterPrompt(intent: string): string {
     
     You MUST respond with ONLY a valid JSON object in this exact format:
     {
-      "skill": "code_review" | "commit_message" | "shell_command",
+      "skill": ${skillNamesList},
       "confidence": 0.0-1.0,
       "reason": "brief explanation of your decision"
     }
@@ -287,12 +219,11 @@ async function evaluateWithRouter(
       throw new Error("Router response missing or invalid 'skill' field");
     }
 
-    const selectedSkill: SkillName =
-      parsed.skill === "code_review"
-        ? "code_review"
-        : parsed.skill === "commit_message"
-        ? "commit_message"
-        : "shell_command";
+    // Validate skill name is one of the known skills
+    const validSkillNames = getAllSkillNames();
+    const selectedSkill: SkillName = validSkillNames.includes(parsed.skill)
+      ? (parsed.skill as SkillName)
+      : "shell_command";
 
     // Validate and normalize confidence (clamp to [0, 1])
     const confidence =
@@ -353,70 +284,46 @@ export async function determineSkill(
 
   // Fallback: If router failed, use keyword-based heuristics
   // This is less reliable than semantic analysis but better than random guessing
-  const hasCodeReviewKeywords = CODE_REVIEW_KEYWORDS.some((pattern) =>
-    pattern.test(intent)
-  );
-  const hasCommitKeywords = COMMIT_KEYWORDS.some((pattern) =>
-    pattern.test(intent)
-  );
-  const hasModifyKeywords = COMMIT_MODIFY_KEYWORDS.some((pattern) =>
-    pattern.test(intent)
-  );
-  const mightBeModify = mightBeModifyIntent(intent);
   const hasNonAscii = containsNonAscii(intent);
 
   // If input contains modification keywords or patterns, choose shell_command
-  // This includes both English keywords and common modification patterns
-  if (hasModifyKeywords || mightBeModify) {
+  if (isModifyCommitIntent(intent)) {
     logDebug(
-      `Router failed, but detected modification intent (keywords: ${hasModifyKeywords}, patterns: ${mightBeModify}). Using shell_command fallback.`
+      `Router failed, but detected modification intent. Using shell_command fallback.`
     );
     return {
       skill: "shell_command",
       reason:
         "Fallback: detected modification intent (router unavailable for semantic verification)",
-      confidence: mightBeModify ? 0.6 : 0.65, // Lower confidence when using pattern matching
+      confidence: 0.65,
       via: "fallback",
     };
   }
 
-  // If input contains code review keywords, assume the user wants code review
-  if (hasCodeReviewKeywords) {
-    logDebug(
-      `Router failed, but detected code review keywords. ${
-        hasNonAscii
-          ? "Using fallback decision for mixed-language input (less reliable without semantic analysis)."
-          : "Using fallback decision for English input."
-      }`
-    );
-    return {
-      skill: "code_review",
-      reason: hasNonAscii
-        ? "Fallback: detected code review keywords in mixed-language input (router unavailable for semantic verification)"
-        : "Fallback: detected code review keywords (router unavailable for semantic verification)",
-      confidence: hasNonAscii ? 0.6 : 0.65,
-      via: "fallback",
-    };
-  }
+  // Try to match skills using their keywords (fallback mode)
+  for (const skill of allSkills) {
+    if (skill.name === "shell_command") continue; // Skip default skill
 
-  // If input contains "commit message" keywords and no modification intent,
-  // assume the user wants to generate a commit message
-  if (hasCommitKeywords) {
-    logDebug(
-      `Router failed, but detected commit message keywords without modification intent. ${
-        hasNonAscii
-          ? "Using fallback decision for mixed-language input (less reliable without semantic analysis)."
-          : "Using fallback decision for English input."
-      }`
+    const hasKeywords = skill.keywords.some((pattern: RegExp) =>
+      pattern.test(intent)
     );
-    return {
-      skill: "commit_message",
-      reason: hasNonAscii
-        ? "Fallback: detected commit message keywords in mixed-language input (router unavailable for semantic verification)"
-        : "Fallback: detected commit message keywords (router unavailable for semantic verification)",
-      confidence: hasNonAscii ? 0.6 : 0.65,
-      via: "fallback",
-    };
+    if (hasKeywords) {
+      logDebug(
+        `Router failed, but detected ${skill.name} keywords. ${
+          hasNonAscii
+            ? "Using fallback decision for mixed-language input (less reliable without semantic analysis)."
+            : "Using fallback decision for English input."
+        }`
+      );
+      return {
+        skill: skill.name,
+        reason: hasNonAscii
+          ? `Fallback: detected ${skill.name} keywords in mixed-language input (router unavailable for semantic verification)`
+          : `Fallback: detected ${skill.name} keywords (router unavailable for semantic verification)`,
+        confidence: hasNonAscii ? 0.6 : 0.65,
+        via: "fallback",
+      };
+    }
   }
 
   // Final fallback: default to shell_command
@@ -427,3 +334,10 @@ export async function determineSkill(
     via: "fallback",
   };
 }
+
+// Re-export types for backward compatibility
+export type {
+  SkillName,
+  SkillDecision,
+  SkillRoutingOptions,
+} from "./skills/types";
