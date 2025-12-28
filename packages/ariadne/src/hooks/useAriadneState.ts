@@ -1,6 +1,7 @@
 import { useReducer, useCallback, useMemo } from "react";
 import type { SkillDecision, SkillName } from "@/skills";
 import type { CommitMessageResult } from "@/commit";
+import type { CodeReviewResult } from "@/codeReview";
 
 // State types
 export type AppScreen =
@@ -10,6 +11,7 @@ export type AppScreen =
   | "confirming"
   | "executing"
   | "commit_ready"
+  | "code_review_ready"
   | "error"
   | "cancelled"
   | "success";
@@ -22,6 +24,7 @@ export interface AriadneState {
   activeSkill: SkillName | "routing" | null;
   skillDecision: SkillDecision | null;
   commitResult: CommitMessageResult | null;
+  codeReviewResult: CodeReviewResult | null;
 }
 
 // Action types
@@ -31,6 +34,7 @@ type Action =
   | { type: "SKILL_DECIDED"; decision: SkillDecision }
   | { type: "COMMAND_GENERATED"; command: string }
   | { type: "COMMIT_GENERATED"; result: CommitMessageResult }
+  | { type: "CODE_REVIEW_GENERATED"; result: CodeReviewResult }
   | { type: "CONFIRM" }
   | { type: "EXECUTING" }
   | { type: "EXECUTION_SUCCESS" }
@@ -81,6 +85,13 @@ export function reducer(state: AriadneState, action: Action): AriadneState {
         screen: "commit_ready",
       };
 
+    case "CODE_REVIEW_GENERATED":
+      return {
+        ...state,
+        codeReviewResult: action.result,
+        screen: "code_review_ready",
+      };
+
     case "CONFIRM":
       return {
         ...state,
@@ -127,6 +138,7 @@ export function reducer(state: AriadneState, action: Action): AriadneState {
         error: null,
         skillDecision: null,
         commitResult: null,
+        codeReviewResult: null,
         activeSkill: "routing",
       };
 
@@ -149,6 +161,7 @@ export function createInitialState(args: string[]): AriadneState {
     activeSkill: "routing",
     skillDecision: null,
     commitResult: null,
+    codeReviewResult: null,
   };
 }
 
@@ -159,6 +172,9 @@ export function getSpinnerText(state: AriadneState): string {
   }
   if (state.activeSkill === "commit_message") {
     return "Preparing commit message (reading git diff)...";
+  }
+  if (state.activeSkill === "code_review") {
+    return "Reviewing code changes (reading git diff)...";
   }
   return "Generating shell command...";
 }
@@ -182,6 +198,10 @@ export function useAriadneState(args: string[]) {
 
   const commitGenerated = useCallback((result: CommitMessageResult) => {
     dispatch({ type: "COMMIT_GENERATED", result });
+  }, []);
+
+  const codeReviewGenerated = useCallback((result: CodeReviewResult) => {
+    dispatch({ type: "CODE_REVIEW_GENERATED", result });
   }, []);
 
   const confirm = useCallback(() => {
@@ -226,6 +246,7 @@ export function useAriadneState(args: string[]) {
     skillDecided,
     commandGenerated,
     commitGenerated,
+    codeReviewGenerated,
     confirm,
     executing,
     executionSuccess,

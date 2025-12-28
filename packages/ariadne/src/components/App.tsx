@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Box, Text, useApp } from "ink";
 import { generateCommand } from "@/ai";
 import { generateCommitMessage } from "@/commit";
+import { generateCodeReview } from "@/codeReview";
 import { execCommand } from "@/exec";
 import {
   Header,
@@ -13,6 +14,7 @@ import {
   ErrorDisplay,
   UsageHelp,
   CommitMessageDisplay,
+  CodeReviewDisplay,
 } from "@/components";
 import type { AppProps } from "@/components";
 import { determineSkill } from "@/skills";
@@ -26,6 +28,7 @@ const App: React.FC<AppProps> = ({ args }) => {
     skillDecided,
     commandGenerated,
     commitGenerated,
+    codeReviewGenerated,
     confirm,
     executionFailed,
     generationFailed,
@@ -44,6 +47,14 @@ const App: React.FC<AppProps> = ({ args }) => {
   // Handle commit ready screen exit
   useEffect(() => {
     if (state.screen === "commit_ready") {
+      const timer = setTimeout(() => exit(), 250);
+      return () => clearTimeout(timer);
+    }
+  }, [state.screen, exit]);
+
+  // Handle code review ready screen exit
+  useEffect(() => {
+    if (state.screen === "code_review_ready") {
       const timer = setTimeout(() => exit(), 250);
       return () => clearTimeout(timer);
     }
@@ -84,6 +95,12 @@ const App: React.FC<AppProps> = ({ args }) => {
           return;
         }
 
+        if (decision.skill === "code_review") {
+          const result = await generateCodeReview(state.intent);
+          codeReviewGenerated(result);
+          return;
+        }
+
         const generatedCommand = await generateCommand(state.intent);
         commandGenerated(generatedCommand);
       } catch (err) {
@@ -93,7 +110,18 @@ const App: React.FC<AppProps> = ({ args }) => {
     };
 
     generate();
-  }, [state.screen, state.intent]);
+    // All functions from useAriadneState are wrapped in useCallback with empty deps,
+    // so they have stable references and won't cause unnecessary re-renders.
+  }, [
+    state.screen,
+    state.intent,
+    startRouting,
+    skillDecided,
+    commitGenerated,
+    codeReviewGenerated,
+    commandGenerated,
+    generationFailed,
+  ]);
 
   // Note: Command execution is handled in handleConfirm when user confirms
 
@@ -157,6 +185,10 @@ const App: React.FC<AppProps> = ({ args }) => {
 
       {state.screen === "commit_ready" && state.commitResult && (
         <CommitMessageDisplay result={state.commitResult} />
+      )}
+
+      {state.screen === "code_review_ready" && state.codeReviewResult && (
+        <CodeReviewDisplay result={state.codeReviewResult} />
       )}
 
       {state.screen === "cancelled" && (

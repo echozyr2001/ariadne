@@ -52,6 +52,11 @@ const UsageHelp: React.FC = () => {
         <Text color="gray">
           Reads your latest git diff and suggests a conventional commit message.
         </Text>
+        <Text> </Text>
+        <Text color="green">code_review</Text>
+        <Text color="gray">
+          Reviews your code changes and provides feedback, issues, and suggestions.
+        </Text>
       </Box>
 
       <Box marginY={1}>

@@ -1,4 +1,5 @@
 import type { CommitMessageResult } from "@/commit";
+import type { CodeReviewResult } from "@/codeReview";
 import type { SkillDecision, SkillName } from "@/skills";
 
 // New unified state type
@@ -9,6 +10,7 @@ export type AppScreen =
   | "confirming"
   | "executing"
   | "commit_ready"
+  | "code_review_ready"
   | "error"
   | "cancelled"
   | "success";
@@ -21,6 +23,7 @@ export interface AriadneState {
   activeSkill: SkillName | "routing" | null;
   skillDecision: SkillDecision | null;
   commitResult: CommitMessageResult | null;
+  codeReviewResult: CodeReviewResult | null;
 }
 
 // Legacy AppState type for backward compatibility
@@ -62,4 +65,8 @@ export interface ErrorDisplayProps {
 
 export interface CommitMessageDisplayProps {
   result: CommitMessageResult;
+}
+
+export interface CodeReviewDisplayProps {
+  result: CodeReviewResult;
 }

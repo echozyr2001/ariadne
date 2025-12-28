@@ -10,6 +10,7 @@ export { default as ExecutionStatus } from "./ExecutionStatus.js";
 export { default as ErrorDisplay } from "./ErrorDisplay.js";
 export { default as UsageHelp } from "./UsageHelp.js";
 export { default as CommitMessageDisplay } from "./CommitMessageDisplay.js";
+export { default as CodeReviewDisplay } from "./CodeReviewDisplay.js";
 
 // Export new hook
 export { useAriadneState } from "../hooks/useAriadneState.js";

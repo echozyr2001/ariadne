@@ -1,7 +1,7 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { getLowTierModel } from "@/modelConfig";
 
-export type SkillName = "shell_command" | "commit_message";
+export type SkillName = "shell_command" | "commit_message" | "code_review";
 
 export interface SkillDecision {
   skill: SkillName;
@@ -18,6 +18,17 @@ const ROUTER_BUDGET = 0.002;
 
 // Keywords for detecting commit message generation intent
 const COMMIT_KEYWORDS = [/commit message/i, /commit msg/i, /git commit/i];
+
+// Keywords for detecting code review intent
+const CODE_REVIEW_KEYWORDS = [
+  /code review/i,
+  /review code/i,
+  /review my code/i,
+  /review changes/i,
+  /审查代码/i,
+  /代码审查/i,
+  /检查代码/i,
+];
 
 // English keywords that indicate modification intent
 // These should NOT trigger commit_message skill, but should generate shell commands instead
@@ -47,6 +58,8 @@ const SKILL_MANIFEST: Record<SkillName, string> = {
     "Generate exactly one safe Unix shell command that satisfies the request.",
   commit_message:
     "Inspect local git changes and craft a concise, conventional commit message that summarizes them.",
+  code_review:
+    "Review local git changes and provide constructive feedback, potential issues, and improvement suggestions.",
 };
 
 function logDebug(message: string) {
@@ -97,13 +110,24 @@ export function detectSkillByKeyword(intent: string): SkillDecision | null {
   }
 
   // For pure English inputs without modification intent, use keyword matching
-  const matchedPattern = COMMIT_KEYWORDS.find((pattern) =>
+  // Check code review keywords first (more specific)
+  const codeReviewPattern = CODE_REVIEW_KEYWORDS.find((pattern) =>
     pattern.test(intent)
   );
-  if (matchedPattern) {
+  if (codeReviewPattern) {
+    return {
+      skill: "code_review",
+      reason: `Matched keyword "${codeReviewPattern}"`,
+      confidence: 0.92,
+      via: "heuristic",
+    };
+  }
+
+  const commitPattern = COMMIT_KEYWORDS.find((pattern) => pattern.test(intent));
+  if (commitPattern) {
     return {
       skill: "commit_message",
-      reason: `Matched keyword "${matchedPattern}"`,
+      reason: `Matched keyword "${commitPattern}"`,
       confidence: 0.92,
       via: "heuristic",
     };
@@ -123,21 +147,25 @@ function buildRouterPrompt(intent: string): string {
     ${skillDescriptions}
     
     Analysis rules:
-    1. Choose "commit_message" when the user wants to GENERATE/WRITE/CREATE a NEW commit message based on current git changes.
+    1. Choose "code_review" when the user wants to REVIEW/ANALYZE/CHECK their code changes for issues, improvements, or feedback.
+       - Understand semantic meaning regardless of language
+       - Examples: "review my code", "code review", "check my changes", "审查代码", "代码审查"
+       - Key semantic indicators: requests to "review", "analyze", "check", "inspect", "examine" code changes
+    2. Choose "commit_message" when the user wants to GENERATE/WRITE/CREATE a NEW commit message based on current git changes.
        - Understand semantic meaning regardless of language
        - Examples: "write a commit message", "generate commit message", "create a commit message"
        - Key semantic indicators: requests to "generate", "write", "create", "give me", "get" a commit message
-    2. Choose "shell_command" when the user wants to MODIFY/EDIT/AMEND an existing commit message.
+    3. Choose "shell_command" when the user wants to MODIFY/EDIT/AMEND an existing commit message.
        - Understand semantic meaning regardless of language
        - Examples: "change the last commit message", "amend the last commit", "edit the previous commit message"
        - Key semantic indicators: requests to "modify", "change", "edit", "amend", "update" an existing commit message
-    3. Choose "shell_command" for all other requests (default command generation behavior).
+    4. Choose "shell_command" for all other requests (default command generation behavior).
     
     CRITICAL: Perform semantic analysis of the user's intent. Understand the meaning regardless of the language used in the request (English, Chinese, Japanese, or any other language).
     
     You MUST respond with ONLY a valid JSON object in this exact format:
     {
-      "skill": "commit_message" | "shell_command",
+      "skill": "code_review" | "commit_message" | "shell_command",
       "confidence": 0.0-1.0,
       "reason": "brief explanation of your decision"
     }
@@ -260,7 +288,11 @@ async function evaluateWithRouter(
     }
 
     const selectedSkill: SkillName =
-      parsed.skill === "commit_message" ? "commit_message" : "shell_command";
+      parsed.skill === "code_review"
+        ? "code_review"
+        : parsed.skill === "commit_message"
+        ? "commit_message"
+        : "shell_command";
 
     // Validate and normalize confidence (clamp to [0, 1])
     const confidence =
@@ -321,6 +353,9 @@ export async function determineSkill(
 
   // Fallback: If router failed, use keyword-based heuristics
   // This is less reliable than semantic analysis but better than random guessing
+  const hasCodeReviewKeywords = CODE_REVIEW_KEYWORDS.some((pattern) =>
+    pattern.test(intent)
+  );
   const hasCommitKeywords = COMMIT_KEYWORDS.some((pattern) =>
     pattern.test(intent)
   );
@@ -341,6 +376,25 @@ export async function determineSkill(
       reason:
         "Fallback: detected modification intent (router unavailable for semantic verification)",
       confidence: mightBeModify ? 0.6 : 0.65, // Lower confidence when using pattern matching
+      via: "fallback",
+    };
+  }
+
+  // If input contains code review keywords, assume the user wants code review
+  if (hasCodeReviewKeywords) {
+    logDebug(
+      `Router failed, but detected code review keywords. ${
+        hasNonAscii
+          ? "Using fallback decision for mixed-language input (less reliable without semantic analysis)."
+          : "Using fallback decision for English input."
+      }`
+    );
+    return {
+      skill: "code_review",
+      reason: hasNonAscii
+        ? "Fallback: detected code review keywords in mixed-language input (router unavailable for semantic verification)"
+        : "Fallback: detected code review keywords (router unavailable for semantic verification)",
+      confidence: hasNonAscii ? 0.6 : 0.65,
       via: "fallback",
     };
   }
