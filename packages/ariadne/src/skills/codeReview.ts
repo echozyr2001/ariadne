@@ -21,6 +21,17 @@ export const codeReviewSkill: SkillDefinition = {
   description:
     "Review local git changes and provide constructive feedback, potential issues, and improvement suggestions.",
   keywords: CODE_REVIEW_KEYWORDS,
+  routingRules: {
+    when: "the user wants to REVIEW/ANALYZE/CHECK their code changes for issues, improvements, or feedback",
+    examples: [
+      "review my code",
+      "code review",
+      "check my changes",
+      "审查代码",
+      "代码审查",
+    ],
+    indicators: ["review", "analyze", "check", "inspect", "examine"],
+  },
   detect: (intent: string): SkillDecision | null => {
     if (!intent.trim()) return null;
 

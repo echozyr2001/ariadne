@@ -16,6 +16,18 @@ export interface SkillRoutingOptions {
 }
 
 /**
+ * Routing rule description for router prompt generation
+ */
+export interface RoutingRule {
+  /** When to choose this skill (semantic description) */
+  when: string;
+  /** Example intents that should trigger this skill */
+  examples?: string[];
+  /** Key semantic indicators/keywords to look for */
+  indicators?: string[];
+}
+
+/**
  * Skill definition interface
  * Each skill should export an object conforming to this interface
  */
@@ -27,9 +39,13 @@ export interface SkillDefinition {
   /** Keywords/patterns to detect this skill (for heuristic matching) */
   keywords: RegExp[];
   /**
+   * Optional routing rules for router prompt generation
+   * Used to dynamically build router prompts instead of hardcoding
+   */
+  routingRules?: RoutingRule;
+  /**
    * Optional function to detect if this skill should be used based on intent
    * Returns a decision if matched, null otherwise
    */
   detect?: (intent: string) => SkillDecision | null;
 }
-

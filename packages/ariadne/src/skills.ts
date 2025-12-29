@@ -64,6 +64,7 @@ export function detectSkillByKeyword(intent: string): SkillDecision | null {
 
 /**
  * Build router prompt using skill definitions
+ * Dynamically generates routing rules from skill definitions instead of hardcoding
  */
 function buildRouterPrompt(intent: string): string {
   const skillDescriptions = allSkills
@@ -73,25 +74,37 @@ function buildRouterPrompt(intent: string): string {
     .map((name) => `"${name}"`)
     .join(" | ");
 
+  // Dynamically build routing rules from skill definitions
+  const skillsWithRules = allSkills.filter((skill) => skill.routingRules);
+  const routingRules = skillsWithRules
+    .map((skill, index) => {
+      const rule = skill.routingRules!;
+      const ruleNumber = index + 1;
+      let ruleText = `${ruleNumber}. Choose "${skill.name}" when ${rule.when}.\n       - Understand semantic meaning regardless of language`;
+
+      if (rule.examples && rule.examples.length > 0) {
+        ruleText += `\n       - Examples: ${rule.examples
+          .map((ex) => `"${ex}"`)
+          .join(", ")}`;
+      }
+
+      if (rule.indicators && rule.indicators.length > 0) {
+        ruleText += `\n       - Key semantic indicators: ${rule.indicators.join(
+          ", "
+        )}`;
+      }
+
+      return ruleText;
+    })
+    .join("\n    ");
+
   return `You are a routing controller for Ariadne CLI. Analyze the user's intent and determine which skill to use.
 
     Available skills:
     ${skillDescriptions}
     
     Analysis rules:
-    1. Choose "code_review" when the user wants to REVIEW/ANALYZE/CHECK their code changes for issues, improvements, or feedback.
-       - Understand semantic meaning regardless of language
-       - Examples: "review my code", "code review", "check my changes", "审查代码", "代码审查"
-       - Key semantic indicators: requests to "review", "analyze", "check", "inspect", "examine" code changes
-    2. Choose "commit_message" when the user wants to GENERATE/WRITE/CREATE a NEW commit message based on current git changes.
-       - Understand semantic meaning regardless of language
-       - Examples: "write a commit message", "generate commit message", "create a commit message"
-       - Key semantic indicators: requests to "generate", "write", "create", "give me", "get" a commit message
-    3. Choose "shell_command" when the user wants to MODIFY/EDIT/AMEND an existing commit message.
-       - Understand semantic meaning regardless of language
-       - Examples: "change the last commit message", "amend the last commit", "edit the previous commit message"
-       - Key semantic indicators: requests to "modify", "change", "edit", "amend", "update" an existing commit message
-    4. Choose "shell_command" for all other requests (default command generation behavior).
+    ${routingRules}
     
     CRITICAL: Perform semantic analysis of the user's intent. Understand the meaning regardless of the language used in the request (English, Chinese, Japanese, or any other language).
     

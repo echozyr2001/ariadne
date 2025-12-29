@@ -53,6 +53,15 @@ export const commitMessageSkill: SkillDefinition = {
   description:
     "Inspect local git changes and craft a concise, conventional commit message that summarizes them.",
   keywords: COMMIT_KEYWORDS,
+  routingRules: {
+    when: "the user wants to GENERATE/WRITE/CREATE a NEW commit message based on current git changes",
+    examples: [
+      "write a commit message",
+      "generate commit message",
+      "create a commit message",
+    ],
+    indicators: ["generate", "write", "create", "give me", "get"],
+  },
   detect: (intent: string): SkillDecision | null => {
     if (!intent.trim()) return null;
 
@@ -83,4 +92,3 @@ export const commitMessageSkill: SkillDefinition = {
 export function isModifyCommitIntent(intent: string): boolean {
   return containsModifyIntent(intent) || mightBeModifyIntent(intent);
 }
-
