@@ -3,7 +3,9 @@ import { Box, Text } from "ink";
 import type { CodeReviewDisplayProps } from "@/components";
 
 const CodeReviewDisplay: React.FC<CodeReviewDisplayProps> = ({ result }) => {
-  const getSeverityColor = (severity: "critical" | "warning" | "suggestion") => {
+  const getSeverityColor = (
+    severity: "critical" | "warning" | "suggestion"
+  ) => {
     switch (severity) {
       case "critical":
         return "red";
@@ -16,7 +18,9 @@ const CodeReviewDisplay: React.FC<CodeReviewDisplayProps> = ({ result }) => {
     }
   };
 
-  const getSeverityLabel = (severity: "critical" | "warning" | "suggestion") => {
+  const getSeverityLabel = (
+    severity: "critical" | "warning" | "suggestion"
+  ) => {
     switch (severity) {
       case "critical":
         return "CRITICAL";
@@ -25,7 +29,7 @@ const CodeReviewDisplay: React.FC<CodeReviewDisplayProps> = ({ result }) => {
       case "suggestion":
         return "SUGGESTION";
       default:
-        return severity.toUpperCase();
+        return "UNKNOWN";
     }
   };
 
@@ -47,7 +51,9 @@ const CodeReviewDisplay: React.FC<CodeReviewDisplayProps> = ({ result }) => {
         <Text bold color="green">
           Summary
         </Text>
-        <Text marginTop={1}>{result.summary}</Text>
+        <Box marginTop={1}>
+          <Text>{result.summary}</Text>
+        </Box>
       </Box>
 
       {/* Issues */}
@@ -77,7 +83,9 @@ const CodeReviewDisplay: React.FC<CodeReviewDisplayProps> = ({ result }) => {
                   </Text>
                 )}
               </Box>
-              <Text marginTop={1}>{issue.description}</Text>
+              <Box marginTop={1}>
+                <Text>{issue.description}</Text>
+              </Box>
             </Box>
           ))}
         </Box>
@@ -95,9 +103,10 @@ const CodeReviewDisplay: React.FC<CodeReviewDisplayProps> = ({ result }) => {
               flexDirection="row"
               marginTop={1}
               marginLeft={2}
+              gap={1}
             >
               <Text color="green">✓</Text>
-              <Text marginLeft={1}>{positive}</Text>
+              <Text>{positive}</Text>
             </Box>
           ))}
         </Box>
@@ -115,9 +124,10 @@ const CodeReviewDisplay: React.FC<CodeReviewDisplayProps> = ({ result }) => {
               flexDirection="row"
               marginTop={1}
               marginLeft={2}
+              gap={1}
             >
               <Text color="cyan">•</Text>
-              <Text marginLeft={1}>{suggestion}</Text>
+              <Text>{suggestion}</Text>
             </Box>
           ))}
         </Box>
@@ -144,4 +154,3 @@ const CodeReviewDisplay: React.FC<CodeReviewDisplayProps> = ({ result }) => {
 };
 
 export default CodeReviewDisplay;
-

@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
-import type { CommandDisplayProps } from "./types.js";
+import type { CommandDisplayProps } from "./types";
 
 const CommandDisplay: React.FC<CommandDisplayProps> = ({ command }) => {
   return (

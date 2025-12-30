@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
-import Header from "./Header.js";
+import Header from "./Header";
 
 const UsageHelp: React.FC = () => {
   return (
@@ -55,7 +55,8 @@ const UsageHelp: React.FC = () => {
         <Text> </Text>
         <Text color="green">code_review</Text>
         <Text color="gray">
-          Reviews your code changes and provides feedback, issues, and suggestions.
+          Reviews your code changes and provides feedback, issues, and
+          suggestions.
         </Text>
       </Box>
 

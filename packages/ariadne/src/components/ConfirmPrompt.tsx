@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Text, useInput } from "ink";
-import type { ConfirmPromptProps } from "./types.js";
+import type { ConfirmPromptProps } from "./types";
 
 const ConfirmPrompt: React.FC<ConfirmPromptProps> = ({
   onConfirm,

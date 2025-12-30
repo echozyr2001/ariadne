@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Text } from "ink";
 import { Spinner } from "@inkjs/ui";
-import type { ExecutionStatusProps } from "./types.js";
+import type { ExecutionStatusProps } from "./types";
 
 const ExecutionStatus: React.FC<ExecutionStatusProps> = ({ command }) => {
   return (

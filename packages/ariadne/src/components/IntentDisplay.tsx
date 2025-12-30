@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
-import type { IntentDisplayProps } from "./types.js";
+import type { IntentDisplayProps } from "./types";
 
 const IntentDisplay: React.FC<IntentDisplayProps> = ({ intent }) => {
   return (

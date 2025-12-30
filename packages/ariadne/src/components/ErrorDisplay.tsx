@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
-import type { ErrorDisplayProps } from "./types.js";
+import type { ErrorDisplayProps } from "./types";
 
 const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
   error,

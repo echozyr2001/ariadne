@@ -1,16 +1,16 @@
-export * from "./types.js";
+export * from "./types";
 
-export { default as App } from "./App.js";
-export { default as Header } from "./Header.js";
-export { default as IntentDisplay } from "./IntentDisplay.js";
-export { default as LoadingSpinner } from "./LoadingSpinner.js";
-export { default as CommandDisplay } from "./CommandDisplay.js";
-export { default as ConfirmPrompt } from "./ConfirmPrompt.js";
-export { default as ExecutionStatus } from "./ExecutionStatus.js";
-export { default as ErrorDisplay } from "./ErrorDisplay.js";
-export { default as UsageHelp } from "./UsageHelp.js";
-export { default as CommitMessageDisplay } from "./CommitMessageDisplay.js";
-export { default as CodeReviewDisplay } from "./CodeReviewDisplay.js";
+export { default as App } from "./App";
+export { default as Header } from "./Header";
+export { default as IntentDisplay } from "./IntentDisplay";
+export { default as LoadingSpinner } from "./LoadingSpinner";
+export { default as CommandDisplay } from "./CommandDisplay";
+export { default as ConfirmPrompt } from "./ConfirmPrompt";
+export { default as ExecutionStatus } from "./ExecutionStatus";
+export { default as ErrorDisplay } from "./ErrorDisplay";
+export { default as UsageHelp } from "./UsageHelp";
+export { default as CommitMessageDisplay } from "./CommitMessageDisplay";
+export { default as CodeReviewDisplay } from "./CodeReviewDisplay";
 
 // Export new hook
-export { useAriadneState } from "../hooks/useAriadneState.js";
+export { useAriadneState } from "../hooks/useAriadneState";
