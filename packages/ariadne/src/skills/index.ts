@@ -22,4 +22,3 @@ export const allSkills: SkillDefinition[] = [
 // Helper to get all skill names dynamically
 export const getAllSkillNames = (): string[] =>
   allSkills.map((skill) => skill.name);
-

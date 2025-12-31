@@ -24,7 +24,7 @@ function normalizeText(content: string): string {
 
 function parseReviewResponse(text: string): CodeReviewResult {
   const normalized = normalizeText(text);
-  
+
   // Try to parse structured JSON first
   try {
     // Look for JSON in the response
@@ -54,10 +54,15 @@ function parseReviewResponse(text: string): CodeReviewResult {
   const suggestions: string[] = [];
   const positives: string[] = [];
   let summary = "";
-  let currentSection: "summary" | "issues" | "suggestions" | "positives" | null = null;
+  let currentSection:
+    | "summary"
+    | "issues"
+    | "suggestions"
+    | "positives"
+    | null = null;
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const line = lines[i]?.trim();
     if (!line) continue;
 
     // Detect section headers
@@ -87,18 +92,25 @@ function parseReviewResponse(text: string): CodeReviewResult {
       }
     } else if (currentSection === "issues") {
       // Try to parse issue format: [SEVERITY] Category: Description
-      const severityMatch = line.match(/^\[?(critical|warning|suggestion|严重|警告|建议)\]?/i);
-      const severity = severityMatch
-        ? (severityMatch[1].toLowerCase().includes("critical") || severityMatch[1].includes("严重")
+      const severityMatch = line.match(
+        /^\[?(critical|warning|suggestion|严重|警告|建议)\]?/i
+      );
+      const severity =
+        severityMatch && severityMatch[1]
+          ? severityMatch[1].toLowerCase().includes("critical") ||
+            severityMatch[1].includes("严重")
             ? "critical"
-            : severityMatch[1].toLowerCase().includes("warning") || severityMatch[1].includes("警告")
-              ? "warning"
-              : "suggestion")
-        : "suggestion";
-      
+            : severityMatch[1].toLowerCase().includes("warning") ||
+              severityMatch[1].includes("警告")
+            ? "warning"
+            : "suggestion"
+          : "suggestion";
+
       const categoryMatch = line.match(/(?:\[.*?\]\s*)?([^:]+):/);
-      const category = categoryMatch ? categoryMatch[1].trim() : "General";
-      const description = line.replace(/^\[.*?\]\s*[^:]+:\s*/, "").trim() || line;
+      const category =
+        categoryMatch && categoryMatch[1] ? categoryMatch[1].trim() : "General";
+      const description =
+        line.replace(/^\[.*?\]\s*[^:]+:\s*/, "").trim() || line;
 
       issues.push({
         severity,
@@ -164,9 +176,7 @@ Requirements:
 - If no issues found, still provide positive feedback and suggestions for improvement
 - Keep the review concise but thorough`;
 
-  const userMessage = `User request: ${
-    userIntent || "Review my code changes"
-  }
+  const userMessage = `User request: ${userIntent || "Review my code changes"}
 Diff source: ${
     repositoryDiff.diffSource === "staged" ? "staged changes" : "working tree"
   }
@@ -214,4 +224,3 @@ ${repositoryDiff.diff}`;
     truncated: repositoryDiff.truncated,
   };
 }
-
