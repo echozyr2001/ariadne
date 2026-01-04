@@ -1,23 +1,23 @@
 import { describe, test, expect } from "bun:test";
-import { AnthropicClient } from "@/client";
+import { Anthropic } from "@/client";
 import { ValidationError } from "@/errors";
 
 describe("AnthropicClient", () => {
   describe("constructor", () => {
     test("should create client with valid API key", () => {
-      const client = new AnthropicClient({ apiKey: "test-api-key" });
+      const client = new Anthropic({ apiKey: "test-api-key" });
       expect(client).toBeDefined();
       expect(client.messages).toBeDefined();
       expect(client.messages.create).toBeDefined();
     });
 
     test("should use default baseURL when not provided", () => {
-      const client = new AnthropicClient({ apiKey: "test-api-key" });
+      const client = new Anthropic({ apiKey: "test-api-key" });
       expect(client).toBeDefined();
     });
 
     test("should use custom baseURL when provided", () => {
-      const client = new AnthropicClient({
+      const client = new Anthropic({
         apiKey: "test-api-key",
         baseURL: "https://custom.api.com",
       });
@@ -26,31 +26,31 @@ describe("AnthropicClient", () => {
 
     test("should throw error when API key is missing", () => {
       expect(() => {
-        new AnthropicClient({ apiKey: "" });
+        new Anthropic({ apiKey: "" });
       }).toThrow(ValidationError);
     });
 
     test("should throw error when API key is only whitespace", () => {
       expect(() => {
-        new AnthropicClient({ apiKey: "   " });
+        new Anthropic({ apiKey: "   " });
       }).toThrow(ValidationError);
     });
 
     test("should throw descriptive error message when API key is missing", () => {
       expect(() => {
-        new AnthropicClient({ apiKey: "" });
+        new Anthropic({ apiKey: "" });
       }).toThrow("API key is required");
     });
   });
 
   describe("messages.create", () => {
     test("should have create method", () => {
-      const client = new AnthropicClient({ apiKey: "test-api-key" });
+      const client = new Anthropic({ apiKey: "test-api-key" });
       expect(typeof client.messages.create).toBe("function");
     });
 
     test("should throw error when model is missing", async () => {
-      const client = new AnthropicClient({ apiKey: "test-api-key" });
+      const client = new Anthropic({ apiKey: "test-api-key" });
       await expect(
         client.messages.create({
           model: "",
@@ -61,7 +61,7 @@ describe("AnthropicClient", () => {
     });
 
     test("should throw error when max_tokens is missing", async () => {
-      const client = new AnthropicClient({ apiKey: "test-api-key" });
+      const client = new Anthropic({ apiKey: "test-api-key" });
       await expect(
         client.messages.create({
           model: "claude-3-5-haiku-20241022",
@@ -72,7 +72,7 @@ describe("AnthropicClient", () => {
     });
 
     test("should throw error when messages array is empty", async () => {
-      const client = new AnthropicClient({ apiKey: "test-api-key" });
+      const client = new Anthropic({ apiKey: "test-api-key" });
       await expect(
         client.messages.create({
           model: "claude-3-5-haiku-20241022",
@@ -107,7 +107,7 @@ describe("AnthropicClient", () => {
       }) as unknown as typeof fetch;
 
       try {
-        const client = new AnthropicClient({ apiKey: "test-api-key" });
+        const client = new Anthropic({ apiKey: "test-api-key" });
         const result = await client.messages.create({
           model: "claude-3-5-haiku-20241022",
           max_tokens: 100,
@@ -155,7 +155,7 @@ describe("AnthropicClient", () => {
       }) as unknown as typeof fetch;
 
       try {
-        const client = new AnthropicClient({ apiKey: "test-api-key" });
+        const client = new Anthropic({ apiKey: "test-api-key" });
         const result = await client.messages.create({
           model: "claude-3-5-haiku-20241022",
           max_tokens: 100,

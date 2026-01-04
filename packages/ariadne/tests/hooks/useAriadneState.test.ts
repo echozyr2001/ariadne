@@ -50,6 +50,7 @@ describe("reducer", () => {
       activeSkill: "routing",
       skillDecision: null,
       commitResult: null,
+      codeReviewResult: null,
     };
 
     const newState = reducer(initialState, { type: "START_ROUTING" });
@@ -69,6 +70,7 @@ describe("reducer", () => {
       activeSkill: "routing",
       skillDecision: null,
       commitResult: null,
+      codeReviewResult: null,
     };
 
     const decision = {
@@ -94,9 +96,13 @@ describe("reducer", () => {
       activeSkill: "shell_command",
       skillDecision: null,
       commitResult: null,
+      codeReviewResult: null,
     };
 
-    const newState = reducer(initialState, { type: "COMMAND_GENERATED", command: "ls -l" });
+    const newState = reducer(initialState, {
+      type: "COMMAND_GENERATED",
+      command: "ls -l",
+    });
 
     expect(newState.command).toBe("ls -l");
     expect(newState.screen).toBe("confirming");
@@ -111,6 +117,7 @@ describe("reducer", () => {
       activeSkill: "commit_message",
       skillDecision: null,
       commitResult: null,
+      codeReviewResult: null,
     };
 
     const commitResult = {
@@ -122,7 +129,10 @@ describe("reducer", () => {
       truncated: false,
     };
 
-    const newState = reducer(initialState, { type: "COMMIT_GENERATED", result: commitResult });
+    const newState = reducer(initialState, {
+      type: "COMMIT_GENERATED",
+      result: commitResult,
+    });
 
     expect(newState.commitResult).toEqual(commitResult);
     expect(newState.screen).toBe("commit_ready");
@@ -137,6 +147,7 @@ describe("reducer", () => {
       activeSkill: "shell_command",
       skillDecision: null,
       commitResult: null,
+      codeReviewResult: null,
     };
 
     const newState = reducer(initialState, { type: "CONFIRM" });
@@ -153,6 +164,7 @@ describe("reducer", () => {
       activeSkill: "shell_command",
       skillDecision: null,
       commitResult: null,
+      codeReviewResult: null,
     };
 
     const error = new Error("Command failed");
@@ -171,10 +183,14 @@ describe("reducer", () => {
       activeSkill: "routing",
       skillDecision: null,
       commitResult: null,
+      codeReviewResult: null,
     };
 
     const error = new Error("Generation failed");
-    const newState = reducer(initialState, { type: "GENERATION_FAILED", error });
+    const newState = reducer(initialState, {
+      type: "GENERATION_FAILED",
+      error,
+    });
 
     expect(newState.error).toEqual(error);
     expect(newState.screen).toBe("error");
@@ -189,6 +205,7 @@ describe("reducer", () => {
       activeSkill: "shell_command",
       skillDecision: null,
       commitResult: null,
+      codeReviewResult: null,
     };
 
     const newState = reducer(initialState, { type: "CANCEL" });
@@ -203,8 +220,14 @@ describe("reducer", () => {
       command: "ls -l",
       error: new Error("test"),
       activeSkill: "shell_command",
-      skillDecision: { skill: "shell_command", reason: "test", confidence: 0.8, via: "heuristic" },
+      skillDecision: {
+        skill: "shell_command",
+        reason: "test",
+        confidence: 0.8,
+        via: "heuristic",
+      },
       commitResult: null,
+      codeReviewResult: null,
     };
 
     const newState = reducer(initialState, { type: "RESET" });
@@ -227,6 +250,7 @@ describe("getSpinnerText", () => {
       activeSkill: "routing",
       skillDecision: null,
       commitResult: null,
+      codeReviewResult: null,
     };
 
     expect(getSpinnerText(state)).toBe("Routing intent to the right skill...");
@@ -241,9 +265,12 @@ describe("getSpinnerText", () => {
       activeSkill: "commit_message",
       skillDecision: null,
       commitResult: null,
+      codeReviewResult: null,
     };
 
-    expect(getSpinnerText(state)).toBe("Preparing commit message (reading git diff)...");
+    expect(getSpinnerText(state)).toBe(
+      "Preparing commit message (reading git diff)..."
+    );
   });
 
   test("should return correct text for shell command", () => {
@@ -255,6 +282,7 @@ describe("getSpinnerText", () => {
       activeSkill: "shell_command",
       skillDecision: null,
       commitResult: null,
+      codeReviewResult: null,
     };
 
     expect(getSpinnerText(state)).toBe("Generating shell command...");
