@@ -47,7 +47,7 @@ Diff (may be truncated for cost control):
 ${repositoryDiff.diff}`;
 
   const response = await client.messages.create({
-    model: getHighTierModel(),
+    model: await getHighTierModel(),
     max_tokens: 320,
     system: systemPrompt,
     messages: [

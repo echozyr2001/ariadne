@@ -176,7 +176,7 @@ async function evaluateWithRouter(
     const response = query({
       prompt: buildRouterPrompt(intent),
       options: {
-        model: getLowTierModel(),
+        model: await getLowTierModel(),
         maxBudgetUsd: ROUTER_BUDGET,
         settingSources: [],
         systemPrompt:

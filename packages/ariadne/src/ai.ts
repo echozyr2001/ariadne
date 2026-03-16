@@ -61,7 +61,7 @@ General strategy:
 
     const stream = await getAnthropicClient().messages.create({
       system: systemPrompt,
-      model: getLowTierModel(),
+      model: await getLowTierModel(),
       max_tokens: 256,
       stream: true,
       messages: [
