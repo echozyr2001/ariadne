@@ -1,4 +1,5 @@
-import { query } from "@anthropic-ai/claude-agent-sdk";
+import { getAnthropicClient } from "@/anthropicClient";
+import { isBudgetLimitError, isModelAccessError } from "@/apiErrors";
 import { getLowTierModel } from "@/modelConfig";
 import {
   allSkills,
@@ -11,7 +12,7 @@ import type {
   SkillRoutingOptions,
 } from "./skills/types";
 
-const ROUTER_BUDGET = 0.002;
+const ROUTER_MAX_TOKENS = 160;
 
 function logDebug(message: string) {
   if (process.env.ARIADNE_DEBUG) {
@@ -19,10 +20,6 @@ function logDebug(message: string) {
   }
 }
 
-/**
- * Check if intent contains non-ASCII characters
- * Indicates need for semantic analysis via router
- */
 function containsNonAscii(intent: string): boolean {
   return /[^\x00-\x7F]/.test(intent);
 }
@@ -41,14 +38,9 @@ export function detectSkillByKeyword(intent: string): SkillDecision | null {
     return null;
   }
 
-  // If the intent contains non-ASCII characters (e.g., Chinese), always use router
-  // for semantic understanding, even if it contains keywords
-  // This avoids false positives like "我希望修改上一条commit message"
-  if (containsNonAscii(intent)) {
-    return null;
-  }
-
-  // For pure English inputs without modification intent, use keyword matching
+  // For inputs without modification intent, use keyword matching.
+  // Modification phrases are checked first to avoid false positives like
+  // "我希望修改上一条commit message".
   // Check skills in order (more specific skills first)
   for (const skill of allSkills) {
     if (skill.detect) {
@@ -165,6 +157,10 @@ function extractJson(text: string): string {
   return jsonStr;
 }
 
+function isFatalRouterError(error: unknown): boolean {
+  return isModelAccessError(error) || isBudgetLimitError(error);
+}
+
 async function evaluateWithRouter(
   intent: string
 ): Promise<SkillDecision | null> {
@@ -173,47 +169,23 @@ async function evaluateWithRouter(
   }
 
   try {
-    const response = query({
-      prompt: buildRouterPrompt(intent),
-      options: {
-        model: await getLowTierModel(),
-        maxBudgetUsd: ROUTER_BUDGET,
-        settingSources: [],
-        systemPrompt:
-          "You are a deterministic router that analyzes user intent and outputs structured JSON. You MUST respond with ONLY valid JSON, no other text. Follow the routing rules exactly and perform semantic analysis of the user's request.",
-      },
+    const response = await getAnthropicClient().messages.create({
+      model: await getLowTierModel(),
+      max_tokens: ROUTER_MAX_TOKENS,
+      system:
+        "You are a deterministic router that analyzes user intent and outputs structured JSON. You MUST respond with ONLY valid JSON, no other text. Follow the routing rules exactly and perform semantic analysis of the user's request.",
+      messages: [
+        {
+          role: "user",
+          content: buildRouterPrompt(intent),
+        },
+      ],
     });
 
     let buffer = "";
-    for await (const message of response) {
-      if (message.type === "assistant") {
-        const assistantMessage = message as {
-          content?:
-            | string
-            | Array<{
-                type: string;
-                text?: string;
-              }>;
-        };
-        const content = assistantMessage.content;
-
-        if (typeof content === "string") {
-          buffer += content;
-        } else if (Array.isArray(content)) {
-          for (const block of content) {
-            if (block.type === "text" && typeof block.text === "string") {
-              buffer += block.text;
-            }
-          }
-        }
-      } else if (
-        (message as { type: string }).type === "error" &&
-        (message as { error?: { message?: string } }).error
-      ) {
-        const errorMessage =
-          (message as { error?: { message?: string } }).error?.message ??
-          "Unknown router error";
-        throw new Error(errorMessage);
+    for (const block of response.content) {
+      if (block.type === "text") {
+        buffer += block.text;
       }
     }
 
@@ -257,6 +229,10 @@ async function evaluateWithRouter(
       via: "router",
     };
   } catch (error) {
+    if (isFatalRouterError(error)) {
+      throw error;
+    }
+
     const errorMsg = error instanceof Error ? error.message : String(error);
     logDebug(`Skill router failed: ${errorMsg}`);
 
@@ -291,6 +267,9 @@ export async function determineSkill(
           error instanceof Error ? error.message : error
         }`
       );
+      if (isFatalRouterError(error)) {
+        throw error;
+      }
       // Continue to fallback logic below
     }
   }

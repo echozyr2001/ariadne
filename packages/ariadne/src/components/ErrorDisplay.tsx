@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
+import { isBudgetLimitError, isModelAccessError } from "@/apiErrors";
 import type { ErrorDisplayProps } from "./types";
 
 const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
@@ -21,6 +22,41 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
           <Text>Please set your ANTHROPIC_API_KEY environment variable:</Text>
           {"\n"}
           <Text color="cyan">export ANTHROPIC_API_KEY='your-key-here'</Text>
+        </Text>
+      );
+    }
+
+    // Handle account budget/quota errors
+    if (isBudgetLimitError(error)) {
+      return (
+        <Text>
+          <Text color="red" bold>
+            ❌ Budget Limit Error
+          </Text>
+          {"\n"}
+          <Text>The configured API account has exceeded its budget or quota.</Text>
+          {"\n"}
+          <Text color="gray">Original error: {error.message}</Text>
+        </Text>
+      );
+    }
+
+    // Handle model/account access errors
+    if (isModelAccessError(error)) {
+      return (
+        <Text>
+          <Text color="red" bold>
+            ❌ Model Access Error
+          </Text>
+          {"\n"}
+          <Text>The configured model or API route rejected this request.</Text>
+          {"\n"}
+          <Text color="gray">Original error: {error.message}</Text>
+          {"\n"}
+          <Text color="gray">
+            Check ARIADNE_MODEL_LOW / ARIADNE_MODEL_HIGH, ANTHROPIC_BASE_URL,
+            and your account model permissions.
+          </Text>
         </Text>
       );
     }
